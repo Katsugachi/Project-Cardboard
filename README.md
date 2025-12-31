@@ -13,4 +13,5 @@ Accounting for the mantle however, our value climbs higher, and while magnesium 
 Finally After Those Short Calculations: A Standard Cardboard Box, Size 100 x 100 x 80 cm^2 Of Prime Real Estate On Land That You Own Costs Approximately:
 $2,460.00 (Land Cost) + $10.80 (Material Building Cost) + $1,500.00 (Gold & Silver) + $15,000.00 (Aluminium & Iron) + $2,000.00 (Copper & Rare Earth Minerals + $1,800,000.00 (Magnesium In Mantle) + $1,200,000,000.00 (Iron, Nickel, Gold & Platinum In the Core)
 = $1,201,820,970.80
-
+# And...?
+With this project you can now calculate how much your size cardboard box prime real estate costs. Very accurately
