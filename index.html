@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Cardboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #000000; --accent: #666666; }
+        
+        * { box-sizing: border-box; } /* Crucial fix for element sizing */
+
+        body { 
+            font-family: 'IBM Plex Mono', monospace; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 40px; 
+            display: flex; 
+            justify-content: center; 
+        }
+
+        .wrapper { 
+            width: 100%; 
+            max-width: 850px; 
+            border: 2px solid var(--text); 
+            padding: 40px; 
+            box-shadow: 12px 12px 0px #000; 
+        }
+
+        header { 
+            border-bottom: 4px solid var(--text); 
+            padding-bottom: 20px; 
+            margin-bottom: 30px; 
+        }
+
+        h1 { font-size: 2.2rem; margin: 0; letter-spacing: -1px; font-weight: 600; }
+
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 25px; 
+            margin-bottom: 30px; 
+        }
+
+        .input-box { display: flex; flex-direction: column; gap: 8px; }
+
+        label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--accent); }
+
+        input, select { 
+            border: 1px solid var(--text); 
+            padding: 12px; 
+            font-family: 'IBM Plex Mono'; 
+            font-size: 1rem; 
+            outline: none; 
+            width: 100%; /* Ensures they fit their container */
+            background: white;
+            appearance: none; /* Removes default styling for cleaner look */
+            -webkit-appearance: none;
+        }
+
+        /* Re-adding a custom arrow for the select box since appearance is none */
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+        }
+
+        input:focus { background: #f8f8f8; border-width: 2px; }
+
+        .dim-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+        .button-stack { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+
+        button { 
+            background: var(--text); 
+            color: var(--bg); 
+            border: none; 
+            padding: 18px; 
+            font-family: 'IBM Plex Mono'; 
+            font-weight: 600; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            width: 100%; 
+            transition: transform 0.1s;
+        }
+
+        button:active { transform: translateY(2px); }
+        button:hover { background: #333; }
+
+        .secondary-btn { 
+            background: transparent; 
+            color: var(--text); 
+            border: 1px solid var(--text); 
+        }
+
+        #audit-log { 
+            margin-top: 40px; 
+            border-top: 2px dashed var(--text); 
+            padding-top: 25px; 
+            display: none; 
+        }
+
+        .entry { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+
+        .total { 
+            font-size: 1.6rem; 
+            font-weight: 600; 
+            margin-top: 25px; 
+            border-top: 4px solid var(--text); 
+            padding-top: 15px; 
+            display: flex;
+            justify-content: space-between;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 20px; }
+            .wrapper { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <header>
+        <h1>Project Cardboard</h1>
+        <p style="margin: 5px 0 0 0; font-size: 0.8rem; letter-spacing: 1px;">AUD-SYD UNIT</p>
+    </header>
+
+    <div class="grid">
+        <div class="input-box">
+            <label>Dimensions (CM: L x W x H)</label>
+            <div class="dim-inputs">
+                <input type="number" id="L" value="100">
+                <input type="number" id="W" value="100">
+                <input type="number" id="H" value="80">
+            </div>
+        </div>
+        <div class="input-box">
+            <label>Material Grade (Thickness)</label>
+            <select id="thickness">
+                <option value="3">3mm (Single Wall)</option>
+                <option value="7">7mm (Double Wall)</option>
+                <option value="15">15mm (Triple Wall)</option>
+            </select>
+        </div>
+        <div class="input-box">
+            <label>Board Density (GSM)</label>
+            <input type="number" id="gsm" value="250">
+        </div>
+        <div class="input-box">
+            <label>Labor Rate (AUD/HR)</label>
+            <input type="number" id="wage" value="25.00">
+        </div>
+    </div>
+
+    <div class="button-stack">
+        <button onclick="calculateValuation()">Start</button>
+        <button class="secondary-btn" id="pdfBtn" style="display:none;" onclick="generatePDF()">Export (PDF)</button>
+    </div>
+
+    <div id="audit-log">
+        <div class="entry"><span>Land Footprint</span> <span id="out-foot"></span></div>
+        <div class="entry"><span>Sydney Real Estate Basis</span> <span id="out-land"></span></div>
+        <div class="entry"><span>Calculated Material Cost</span> <span id="out-mat"></span></div>
+        <div class="entry"><span>Assembly Labor (2m Units)</span> <span id="out-labor"></span></div>
+        <div class="entry"><span>Mineral Rights (Crust)</span> <span id="out-crust"></span></div>
+        <div class="entry"><span>Magnesium Reserves (Mantle)</span> <span id="out-mantle"></span></div>
+        <div class="entry"><span>Core Assets (Au, Pt, Ni, Fe)</span> <span id="out-core"></span></div>
+        <div class="total"><span>Grand Total</span> <span id="out-total"></span></div>
+    </div>
+</div>
+
+<script>
+    let lastData = {};
+
+    function calculateValuation() {
+        const L = parseFloat(document.getElementById('L').value) / 100;
+        const W = parseFloat(document.getElementById('W').value) / 100;
+        const H = parseFloat(document.getElementById('H').value) / 100;
+        const thick = parseFloat(document.getElementById('thickness').value);
+        const gsm = parseFloat(document.getElementById('gsm').value);
+        const wage = parseFloat(document.getElementById('wage').value);
+
+        const footprint = L * W;
+        const surfaceArea = 2 * (L*W + L*H + W*H);
+        
+        // Material logic: Area * (GSM converted to kg) * quality factor based on thickness
+        const materialValue = (surfaceArea * (gsm / 1000) * (thick / 2.5));
+        const laborValue = (wage / 60) * 2;
+        
+        const landValue = footprint * 2460.00;
+        const crustValue = footprint * 18500.00;
+        const mantleValue = footprint * 1800000.00;
+        const coreValue = footprint * 1200000000.00;
+        const total = materialValue + laborValue + landValue + crustValue + mantleValue + coreValue;
+
+        lastData = { L, W, H, thick, gsm, footprint, materialValue, laborValue, landValue, crustValue, mantleValue, coreValue, total };
+
+        document.getElementById('out-foot').innerText = (footprint).toFixed(4) + ' m²';
+        document.getElementById('out-land').innerText = '$' + landValue.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('out-mat').innerText = '$' + materialValue.toFixed(2);
+        document.getElementById('out-labor').innerText = '$' + laborValue.toFixed(2);
+        document.getElementById('out-crust').innerText = '$' + crustValue.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('out-mantle').innerText = '$' + mantleValue.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('out-core').innerText = '$' + coreValue.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('out-total').innerText = '$' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+        document.getElementById('audit-log').style.display = 'block';
+        document.getElementById('pdfBtn').style.display = 'block';
+    }
+
+    function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const date = new Date().toISOString().split('T')[0];
+        const refNum = Math.floor(Math.random() * 1000000);
+
+        doc.setFont("courier", "bold");
+        doc.setFontSize(24);
+        doc.text("PROPERTY APPRAISAL", 20, 30);
+        
+        doc.setFontSize(10);
+        doc.setFont("courier", "normal");
+        doc.text(`REF NO: ${refNum}`, 20, 40);
+        doc.text(`ISSUED: ${date}`, 20, 45);
+        doc.text("PROJECT CARDBOARD VALUATION", 20, 50);
+        doc.line(20, 55, 190, 55);
+
+        doc.setFont("courier", "bold");
+        doc.text("SPECIFICATIONS:", 20, 65);
+        doc.setFont("courier", "normal");
+        doc.text(`- DIMENSIONS: ${lastData.L*100}cm x ${lastData.W*100}cm x ${lastData.H*100}cm`, 25, 72);
+        doc.text(`- FOOTPRINT: ${lastData.footprint.toFixed(4)} m2`, 25, 78);
+        doc.text(`- MATERIAL: ${lastData.gsm} GSM / ${lastData.thick}mm CORRUGATED`, 25, 84);
+
+        doc.setFont("courier", "bold");
+        doc.text("VALUATION BREAKDOWN:", 20, 100);
+        
+        const lines = [
+            ["SURFACE LAND RIGHTS (SYDNEY AVG)", lastData.landValue],
+            ["MATERIAL BUILDING COST", lastData.materialValue],
+            ["ASSEMBLY LABOR COST", lastData.laborValue],
+            ["CRUSTAL MINERAL RIGHTS", lastData.crustValue],
+            ["MANTLE MAGNESIUM RESERVES", lastData.mantleValue],
+            ["CORE PRECIOUS METALS", lastData.coreValue]
+        ];
+
+        let y = 110;
+        doc.setFont("courier", "normal");
+        lines.forEach(line => {
+            doc.text(line[0], 20, y);
+            doc.text("$" + line[1].toLocaleString(undefined, {minimumFractionDigits: 2}), 140, y);
+            y += 8;
+        });
+
+        doc.line(20, y+5, 190, y+5);
+        doc.setFont("courier", "bold");
+        doc.setFontSize(14);
+        doc.text("GRAND TOTAL VALUATION:", 20, y + 15);
+        doc.text("$" + lastData.total.toLocaleString(undefined, {minimumFractionDigits: 2}), 110, y + 15);
+
+        // Legal Stamp Graphic
+        doc.setLineWidth(1);
+        doc.rect(140, 230, 40, 40);
+        doc.setFontSize(8);
+        doc.text("APPROVED", 147, 245);
+        doc.text("VERIFIED", 147, 255);
+
+        doc.setFontSize(7);
+        doc.text("DISCLAIMER: This document serves as a theoretical valuation of a physical unit and the", 20, 275);
+        doc.text("corresponding vertical column extending to the Earth's center. Not for real estate filing.", 20, 280);
+        
+        doc.save(`Project_Cardboard.pdf`);
+    }
+</script>
+
+</body>
+</html>
